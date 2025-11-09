@@ -21,17 +21,31 @@ Sistema de seguimiento en tiempo real de buses urbanos para la ciudad de Sincele
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/TU_USUARIO/rutas_verdes.git
+git clone https://github.com/jersonjjcr/ruta_verde.git
 
 # Entrar al directorio
-cd rutas_verdes
+cd ruta_verde
 
 # Instalar dependencias
 npm install
 
+# Configurar Firebase (Ver FIREBASE_SETUP.md)
+cp .env.example .env
+# Editar .env con tus credenciales de Firebase
+
 # Iniciar servidor de desarrollo
 npm run dev
 ```
+
+## 🔥 Configuración de Firebase
+
+Esta aplicación usa **Firebase Realtime Database** para sincronizar las ubicaciones en tiempo real.
+
+**Pasos rápidos:**
+1. Crea un proyecto en [Firebase Console](https://console.firebase.google.com/)
+2. Habilita Realtime Database
+3. Copia tu configuración a `.env`
+4. Consulta `FIREBASE_SETUP.md` para instrucciones detalladas
 
 ## 🛠️ Scripts disponibles
 
