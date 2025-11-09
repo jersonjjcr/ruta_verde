@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import MapView from './components/MapView'
 import Sidebar from './components/Sidebar'
 import UserLocation from './components/UserLocation'
+import busLocationService from './firebase/busLocationService'
 import './App.css'
 
 // Importar las rutas
@@ -24,43 +25,42 @@ function App() {
   const [ubicacionUsuario, setUbicacionUsuario] = useState(null)
   const [busesReales, setBusesReales] = useState([])
   const [modoSimulacion, setModoSimulacion] = useState(true)
+  const [firebaseActivo, setFirebaseActivo] = useState(false)
+
+  // Escuchar todos los buses en tiempo real desde Firebase
+  useEffect(() => {
+    let unsubscribe = null
+
+    try {
+      // Escuchar cambios en tiempo real
+      unsubscribe = busLocationService.listenToAllBuses((buses) => {
+        console.log('Buses actualizados desde Firebase:', buses)
+        
+        // Filtrar buses por ruta seleccionada
+        const busesEnRuta = buses.filter(bus => bus.ruta === rutaSeleccionada)
+        setBusesReales(busesEnRuta)
+        
+        // Desactivar simulación si hay buses reales
+        setModoSimulacion(busesEnRuta.length === 0)
+        setFirebaseActivo(true)
+      })
+    } catch (error) {
+      console.error('Error al conectar con Firebase:', error)
+      setFirebaseActivo(false)
+      setModoSimulacion(true)
+    }
+
+    // Limpiar listener al desmontar
+    return () => {
+      if (unsubscribe) {
+        unsubscribe()
+      }
+    }
+  }, [rutaSeleccionada])
 
   // Manejar ubicación del usuario
   const handleLocationUpdate = (ubicacion) => {
     setUbicacionUsuario(ubicacion)
-    
-    if (ubicacion) {
-      // Agregar o actualizar el bus real en la lista
-      setBusesReales(prev => {
-        const busExistente = prev.find(b => b.id === 'usuario-actual')
-        
-        if (busExistente) {
-          // Actualizar posición del bus existente
-          return prev.map(b => 
-            b.id === 'usuario-actual' 
-              ? { ...b, ...ubicacion, ultimaActualizacion: Date.now() }
-              : b
-          )
-        } else {
-          // Agregar nuevo bus
-          return [...prev, {
-            id: 'usuario-actual',
-            nombre: 'Tu Bus',
-            ruta: rutaSeleccionada,
-            ...ubicacion,
-            esUsuario: true,
-            ultimaActualizacion: Date.now()
-          }]
-        }
-      })
-      
-      // Desactivar modo simulación cuando hay ubicación real
-      setModoSimulacion(false)
-    } else {
-      // Remover el bus del usuario cuando detiene el rastreo
-      setBusesReales(prev => prev.filter(b => b.id !== 'usuario-actual'))
-      setModoSimulacion(true)
-    }
   }
 
   // Simular posición del bus (solo en modo simulación)
@@ -126,7 +126,10 @@ function App() {
     <div className="app-container">
       <header className="header">
         <h1>🚌 Rutas Verdes - Sincelejo</h1>
-        <p>Seguimiento en tiempo real de buses urbanos</p>
+        <p>
+          Seguimiento en tiempo real de buses urbanos
+          {firebaseActivo && <span className="status-badge">🟢 Conexión activa</span>}
+        </p>
       </header>
       
       <div className="main-content">

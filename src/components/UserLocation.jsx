@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import busLocationService from '../firebase/busLocationService'
 
 function UserLocation({ onLocationUpdate, rutaActual }) {
   const [enBus, setEnBus] = useState(false)
@@ -35,8 +36,15 @@ function UserLocation({ onLocationUpdate, rutaActual }) {
           accuracy: position.coords.accuracy
         }
         
-        onLocationUpdate(ubicacion)
-        console.log('Ubicación actualizada:', ubicacion)
+        // Compartir ubicación en Firebase
+        busLocationService.shareLocation(ubicacion, rutaActual)
+          .then(() => {
+            onLocationUpdate(ubicacion)
+            console.log('Ubicación compartida:', ubicacion)
+          })
+          .catch((err) => {
+            console.error('Error al compartir ubicación:', err)
+          })
       },
       (error) => {
         console.error('Error de geolocalización:', error)
@@ -58,10 +66,23 @@ function UserLocation({ onLocationUpdate, rutaActual }) {
       navigator.geolocation.clearWatch(watchId)
       setWatchId(null)
     }
+    
+    // Dejar de compartir en Firebase
+    busLocationService.stopSharing()
+    
     setRastreando(false)
     setEnBus(false)
     onLocationUpdate(null)
   }
+
+  // Limpiar al desmontar el componente
+  useEffect(() => {
+    return () => {
+      if (rastreando) {
+        busLocationService.cleanup()
+      }
+    }
+  }, [rastreando])
 
   const handleConfirmarEnBus = () => {
     setEnBus(true)
